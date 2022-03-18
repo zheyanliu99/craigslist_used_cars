@@ -43,7 +43,7 @@ sapply(X = df, FUN = function(x) sum(is.na(x)))/nrow(df)
 ```
 
 ```{r}
-table(df$transmission  )
+table(df$transmission)
 ```
 
 
