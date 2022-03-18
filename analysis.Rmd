@@ -1,0 +1,83 @@
+---
+title: "analysis"
+author: "Zheyan Liu"
+date: "3/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .7,
+  out.width = "95%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = 'bottom'))
+
+options(
+  ggplot2.continuous.colour = 'viridis',
+  ggplot2.continuous.fill = 'viridis'
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+# Data Processing
+
+```{r}
+table(df$fuel)
+```
+
+```{r pressure, echo=FALSE}
+df = read_csv('data/vehicles.csv')
+df = 
+  df %>% 
+  filter(fuel == 'electric')
+```
+
+```{r}
+sapply(X = df, FUN = function(x) sum(is.na(x)))/nrow(df)
+```
+
+```{r}
+table(df$transmission  )
+```
+
+
+
+
+```{r}
+df1 = 
+  df %>% 
+    select(price, year, manufacturer, condition, odometer, title_status,transmission,drive, type, paint_color, state) %>% 
+    filter(
+      price > quantile(price,0.05),
+      price < quantile(df$price,0.99)
+    ) %>% 
+    mutate(
+      manufacturer = ifelse(is.na(manufacturer), 'NAN', manufacturer),
+      condition = ifelse(is.na(condition), 'NAN', condition),
+      odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
+      title_status = ifelse(is.na(title_status), 'NAN', title_status),
+      transmission = ifelse(is.na(transmission), 'NAN', transmission),
+      drive = ifelse(is.na(drive), 'NAN', drive),
+      type = ifelse(is.na(type), 'NAN', type),
+      paint_color = ifelse(is.na(paint_color), 'NAN', paint_color)
+    )
+
+```
+# Model
+
+
+```{r}
+reg = lm(price~., data = df1)
+summary(reg)
+```
+
+
+
+
+
