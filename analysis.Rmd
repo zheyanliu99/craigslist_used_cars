@@ -51,13 +51,14 @@ Impute as ‘NAN’ for analysis
 ```{r}
 df1 = 
   df %>% 
-    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state) %>% 
+    select(price, year, manufacturer, model, condition, odometer, title_status, transmission,drive, type, paint_color, state) %>% 
     filter(
       price > quantile(price,0.02),
       price < quantile(df$price,0.98)
     ) %>% 
     mutate(
       manufacturer = ifelse(is.na(manufacturer), 'NAN', manufacturer),
+      model = ifelse(is.na(manufacturer), 'NAN', manufacturer),
       condition = ifelse(is.na(condition), 'NAN', condition),
       odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
       title_status = ifelse(is.na(title_status), 'NAN', title_status),
@@ -80,8 +81,17 @@ Manufacturer is MNAR
 df1 %>% 
   group_by(manufacturer) %>% 
   mutate(n = n()) %>% 
-  filter(n >= 50) %>% 
+  filter(n >= 10) %>% 
   ggplot(aes(x=manufacturer, y=price, fill=manufacturer)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+model is MNAR
+
+```{r}
+df1 %>% 
+  group_by(model) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 30) %>% 
+  ggplot(aes(x=model, y=price, fill=model)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 Condition is MAR
@@ -172,6 +182,7 @@ Skewed to the left with two vertices
 df %>% 
   ggplot(aes(x=price)) + geom_histogram(bins=35)
 ```
+Only tesla
 
 ```{r}
 df %>% 
@@ -179,11 +190,133 @@ df %>%
   ggplot(aes(x=price)) + geom_histogram(bins=35)
 ```
 
+## Price with continuous variables
+
+
+```{r}
+library(patchwork)
+
+p1 = 
+  df1 %>% 
+    ggplot(aes(x=year, y=price)) + geom_point()
+
+p2 = 
+  df1 %>% 
+    ggplot(aes(x=odometer, y=price)) + geom_point()
+
+p1 + p2
+```
+
+
+
+
+## Price with category variables
+
+
+
+```{r, fig.height = 25, fig.width = 8}
+p1 = 
+  df1 %>% 
+    group_by(paint_color) %>% 
+    mutate(n = n()) %>% 
+    drop_na(paint_color) %>% 
+    filter(n >= 50) %>% 
+    ggplot(aes(x=reorder(paint_color, price, median, na.rm = TRUE), y=price, fill=paint_color)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="paint_color")
+
+p2 = 
+  df1 %>% 
+    group_by(type) %>% 
+    mutate(n = n()) %>% 
+    drop_na(type) %>% 
+    filter(n >= 50) %>% 
+    ggplot(aes(x=reorder(type, price, median, na.rm = TRUE), y=price, fill=type)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="type")
+
+p3 = 
+  df1 %>% 
+    group_by(manufacturer ) %>% 
+    mutate(n = n()) %>% 
+    drop_na(manufacturer ) %>% 
+    filter(n >= 50) %>% 
+    ggplot(aes(x=reorder(manufacturer , price, median, na.rm = TRUE), y=price, fill=manufacturer)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="manufacturer ")
+
+p4 = 
+  df1 %>% 
+    group_by(condition) %>% 
+    mutate(n = n()) %>% 
+    drop_na(condition) %>% 
+    filter(n >= 50) %>% 
+    ggplot(aes(x=reorder(condition , price, median, na.rm = TRUE), y=price, fill=condition)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="condition")
+
+p5 = 
+  df1 %>% 
+    group_by(drive) %>% 
+    mutate(n = n()) %>% 
+    drop_na(drive) %>% 
+    filter(n >= 50) %>% 
+    ggplot(aes(x=reorder(drive  , price, median, na.rm = TRUE), y=price, fill=drive)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="drive ")
+
+p6 = 
+  df1 %>% 
+    group_by(transmission) %>% 
+    mutate(n = n()) %>% 
+    drop_na(transmission) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(transmission, price, median, na.rm = TRUE), y=price, fill=transmission)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="transmission")
+
+p7 = 
+  df1 %>% 
+    group_by(state) %>% 
+    mutate(n = n()) %>% 
+    drop_na(state) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(state, price, median, na.rm = TRUE), y=price, fill=state)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="state")
+
+(p1 + p2 + p3)/(p4 + p5+ p6)/p7
+
+```
+
+
+
+
 
 # Model
 
+## Regression (Do not use it!!!)
+
+Delete all na records, get adjusted R-square 0.8974
 
 ```{r}
 reg = lm(price~., data = df1)
 summary(reg)
 ```
+
+## Lasso
+
+
+
+## Regression Tree
+
+
+
+## GBDT
