@@ -27,9 +27,7 @@ scale_fill_discrete = scale_fill_viridis_d
 
 # Data Processing
 
-```{r}
-table(df$fuel)
-```
+Read data
 
 ```{r pressure, echo=FALSE}
 df = read_csv('data/vehicles.csv')
@@ -38,24 +36,25 @@ df =
   filter(fuel == 'electric')
 ```
 
+## Missing variables
+
+### Missing rate
+
 ```{r}
 sapply(X = df, FUN = function(x) sum(is.na(x)))/nrow(df)
 ```
 
-```{r}
-table(df$transmission)
-```
+### MAR or MNAR
 
-
-
+Impute as ‘NAN’ for analysis
 
 ```{r}
 df1 = 
   df %>% 
-    select(price, year, manufacturer, condition, odometer, title_status,transmission,drive, type, paint_color, state) %>% 
+    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state) %>% 
     filter(
-      price > quantile(price,0.05),
-      price < quantile(df$price,0.99)
+      price > quantile(price,0.02),
+      price < quantile(df$price,0.98)
     ) %>% 
     mutate(
       manufacturer = ifelse(is.na(manufacturer), 'NAN', manufacturer),
@@ -69,6 +68,118 @@ df1 =
     )
 
 ```
+
+
+Missing at random (MAR) or missing not at random (MNAR)? Or in other words, are they dependent on price? Only on variable with considerably large missing rate.
+
+#### Using box plot with price
+
+Manufacturer is MNAR
+
+```{r}
+df1 %>% 
+  group_by(manufacturer) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 50) %>% 
+  ggplot(aes(x=manufacturer, y=price, fill=manufacturer)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+Condition is MAR
+
+```{r}
+df1 %>% 
+  group_by(condition) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 100) %>% 
+  ggplot(aes(x=condition, y=price, fill=condition)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+title_status is MNAR
+
+```{r}
+df1 %>% 
+  group_by(title_status) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 5) %>% 
+  ggplot(aes(x=title_status, y=price, fill=title_status)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+transmission is MAR
+
+```{r}
+df1 %>% 
+  group_by(transmission) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 5) %>% 
+  ggplot(aes(x=transmission, y=price, fill=transmission)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+drive is MAR
+
+```{r}
+df1 %>% 
+  group_by(drive) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 100) %>% 
+  ggplot(aes(x=drive, y=price, fill=drive)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+type is MAR
+
+```{r}
+df1 %>% 
+  group_by(type) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 100) %>% 
+  ggplot(aes(x=type, y=price, fill=type)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+paint_color is MAR
+
+```{r}
+df1 %>% 
+  group_by(paint_color) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 100) %>% 
+  ggplot(aes(x=paint_color, y=price, fill=paint_color)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+Create new attribute 'NAN' for MNAR
+
+```{r}
+df1 = 
+  df %>% 
+    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state) %>% 
+    filter(
+      price > quantile(price,0.05),
+      price < quantile(df$price,0.99)
+    ) %>% 
+    mutate(
+      manufacturer = ifelse(is.na(manufacturer), 'NAN', manufacturer),
+      odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
+      title_status = ifelse(is.na(title_status), 'NAN', title_status)
+    )
+```
+
+
+# Analysis
+
+## Dependent variable price
+
+Skewed to the left with two vertices
+
+```{r}
+df %>% 
+  ggplot(aes(x=price)) + geom_histogram(bins=35)
+```
+
+```{r}
+df %>% 
+  filter(manufacturer=='tesla') %>% 
+  ggplot(aes(x=price)) + geom_histogram(bins=35)
+```
+
+
 # Model
 
 
@@ -76,8 +187,3 @@ df1 =
 reg = lm(price~., data = df1)
 summary(reg)
 ```
-
-
-
-
-
