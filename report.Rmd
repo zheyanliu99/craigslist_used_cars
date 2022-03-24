@@ -9,6 +9,8 @@ output:
     df_print: paged
     toc: yes
     toc_depth: '2'
+editor_options: 
+  chunk_output_type: console
 --- 
 
 \newpage
@@ -17,6 +19,8 @@ output:
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(caret)
+library(patchwork)
+library(leaflet)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -47,10 +51,23 @@ df =
       # price < quantile(price,0.98)
     )
 
+df1 = 
+df %>% 
+    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state, lat, long) 
+
+# as.data.frame(sapply(X = df2, FUN = function(x) sum(is.na(x)))/nrow(df2))  %>% knitr::kable(col.names = "Missing rate")
+# 
+# range(df %>% drop_na(long) %>% pull(long))
+# 
+# str(df2)
+# 
+# length(table(df2$paint_color))
+# 
+# table(df2$paint_color)
 ```
 
 
-With the soaring oil price, more and more people are considering buying an electric car to save money. We would like to build models to help predict the used electric car price so that customers can use this model to determine if the deal is reasonable. 
+With the soaring oil price, more and more people are considering buying an electric car to save money. We would like to build models to help predict the used electric car price so that customers can use this model to determine whether the deal is reasonable. 
 
 
 We used data from [Craigslist](https://newyork.craigslist.org/), which is the world's largest collection of used vehicles for sale. The [original data](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data) contains price of used car from Apr 2011 to May 2011, it contains `r nrow(df_raw)` observations and  `r ncol(df_raw)` variables. Since we are only interested in cars fueled by electricity, data is reduced to `r nrow(df)` observations.
@@ -58,17 +75,162 @@ We used data from [Craigslist](https://newyork.craigslist.org/), which is the wo
 
 ## Research Questions
 
+* Find appropriate way to handle missing values
 
+* Conduct exploratory data analysis to find interesting facts about the data
+
+* Build and compare machine learning models to find the best one for the prediction task
 
 ## Data preparation
 
+We drop variables that has missing rate higher than 35%. For variables with relatively high missing rate (>2%), we analyze the missing pattern, whether they are MAR or MNAR. For MNAR categorical variables, missingness is treat as an attribute *NAN_cat*. For MAR categorical variables, missing values are imputed with mode. After selection and imputation, the final variables for model are as follow
+
+| Variable     | Type       | levels/range   | Missing rate | Missing type | Impute method   |
+|--------------|------------|----------------|--------------|--------------|-----------------|
+| Price        | continuous | 0-130000       | 0            | NA           | NA              |
+| Year         | continuous | 1901-2022      | 0.2%         | MAR          | Median          |
+| Odometer     | continuous | 0-1111111      | 0.3%         | MAR          | Median          |
+| Lat          | continuous | 19.64-61.57    | 1.8%         | MAR          | Median          |
+| Long         | continuous | -159.37--70.06 | 1.8%         | MAR          | Median          |
+| Manufacturer | category   | 29 levels      | 4.8%         | MNAR         | NA as attribute |
+| Condition    | category   | 6 levels       | 31.6%        | MNAR         | NA as attribute |
+| Title_status | category   | 6 levels       | 1.5%         | MNAR         | NA as attribute |
+| Transmission | category   | 3 levels       | 1.1%         | MAR          | Mode            |
+| Drive        | category   | 3 levels       | 19.9%        | MAR          | Mode            |
+| Type         | category   | 11 levels      | 10.1%        | MAR          | Mode            |
+| State        | category   | 49 levels      | 0            | NA           | NA              |
+| Paint_color  | category   | 11 levels      | 26.4%        | MAR          | Mode            |
+
+*Manufacturer*, *Title_status* and *Condition* are considered MNAR because the records with missing values clearly has lower price compared to other category.
+
+# Exploratory data analysis
+
+We discovered some interesting facts through visualization. Note that all the exploratory data analysis are based on the raw data without imputation.
+
+## Interesting price distribution
 
 
-# Exploratory analysis
+```{r, fig.asp=0.6, echo=FALSE}
+p1 = 
+  df %>% 
+    ggplot(aes(x=price)) + geom_histogram(bins=35,color="darkorchid4", fill="darkorchid4") +
+    labs(y="count", x="price of all cars")
 
+p2 = 
+  df %>% 
+    filter(manufacturer=='tesla') %>% 
+    ggplot(aes(x=price)) + geom_histogram(bins=30,color="darkgoldenrod2", fill="darkgoldenrod2")+ 
+    labs(y="count", x="price of Tesla")
+
+p1 + p2
+```
+
+From the first price histogram, there is clearly two vertices of the price, and the price is relatively skewed to the left. The reason is that 689 out of 1698 observations in the dataset is manufacturered by Tesla, and Tesla has a higher price than most of other brands.
+
+## Price vs category variables
+
+```{r, fig.height = 32, fig.width = 8, fig.asp=1, echo=FALSE}
+p1 = 
+  df1 %>% 
+    group_by(paint_color) %>% 
+    mutate(n = n()) %>% 
+    drop_na(paint_color) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(paint_color, price, median, na.rm = TRUE), y=price, fill=paint_color)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="paint_color")
+
+p2 = 
+  df1 %>% 
+    group_by(type) %>% 
+    mutate(n = n()) %>% 
+    drop_na(type) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(type, price, median, na.rm = TRUE), y=price, fill=type)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="type")
+
+p3 = 
+  df1 %>% 
+    group_by(manufacturer ) %>% 
+    mutate(n = n()) %>% 
+    drop_na(manufacturer ) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(manufacturer , price, median, na.rm = TRUE), y=price, fill=manufacturer)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="manufacturer ")
+
+p4 = 
+  df1 %>% 
+    group_by(condition) %>% 
+    mutate(n = n()) %>% 
+    drop_na(condition) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(condition , price, median, na.rm = TRUE), y=price, fill=condition)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="condition")
+
+p5 = 
+  df1 %>% 
+    group_by(drive) %>% 
+    mutate(n = n()) %>% 
+    drop_na(drive) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(drive  , price, median, na.rm = TRUE), y=price, fill=drive)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="drive ")
+
+p6 = 
+  df1 %>% 
+    group_by(transmission) %>% 
+    mutate(n = n()) %>% 
+    drop_na(transmission) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(transmission, price, median, na.rm = TRUE), y=price, fill=transmission)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="transmission")
+
+p7 = 
+  df1 %>% 
+    group_by(state) %>% 
+    mutate(n = n()) %>% 
+    drop_na(state) %>% 
+    filter(n >= 30) %>% 
+    ggplot(aes(x=reorder(state, price, median, na.rm = TRUE), y=price, fill=state)) + 
+    geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    theme(legend.position = "none") + 
+    labs(y="price", x="state")
+
+(p1 + p2 + p3)/(p4 + p5+ p6)/p7
+```
+
+Despite some common knowledge, here is some interesting factors from these boxplot:
+
+* White cars has the highest price while red ones has the lowest median price. However, prices of red cars are scattered
+* 4wd cars has the highest price and the reason behind this ican be car type. 123 out of 166 4wd cars are SUV and Sedan
+* Electric cars New Jersy has the highest median price while California is one of the state with the lowest median price
+
+## Price map
+
+<center>
+
+![](price_map.png)
+
+</center>
+
+Most car sales takes place near the Coast or the Great Lakes Region. In addition, the car price in the East Coast is clearly higher than that in the West Coast
 
 # Models
 
 
 # Conclusions
+
+
+# Appendix
 

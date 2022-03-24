@@ -42,11 +42,7 @@ Read data and only keep fuel = 'electric'
 df = read_csv('data/vehicles.csv', show_col_types = FALSE)
 df = 
   df %>% 
-  filter(fuel == 'electric') %>% 
-  filter(
-      price > quantile(price,0.02),
-      price < quantile(df$price,0.98)
-    )
+  filter(fuel == 'electric') 
 ```
 
 ## Missing variables

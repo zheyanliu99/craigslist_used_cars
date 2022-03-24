@@ -1,6 +1,10 @@
 \contentsline {section}{Introduction}{2}{section*.2}%
 \contentsline {subsection}{Research Questions}{2}{section*.3}%
 \contentsline {subsection}{Data preparation}{2}{section*.4}%
-\contentsline {section}{Exploratory analysis}{2}{section*.5}%
-\contentsline {section}{Models}{2}{section*.6}%
-\contentsline {section}{Conclusions}{2}{section*.7}%
+\contentsline {section}{Exploratory data analysis}{2}{section*.5}%
+\contentsline {subsection}{Interesting price distribution}{3}{section*.6}%
+\contentsline {subsection}{Price vs category variables}{4}{section*.7}%
+\contentsline {subsection}{Price map}{5}{section*.8}%
+\contentsline {section}{Models}{5}{section*.9}%
+\contentsline {section}{Conclusions}{5}{section*.10}%
+\contentsline {section}{Appendix}{5}{section*.11}%
