@@ -309,7 +309,7 @@ df1 =
     price > quantile(df$price, 0.07)
   )
 
-
+set.seed(777)
 # Create Train and Test
 indexTrain = 
   createDataPartition(
