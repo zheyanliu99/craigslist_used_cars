@@ -165,10 +165,10 @@ Create new attribute 'NAN' for MNAR
 df1 = 
   df %>% 
     select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state, lat , long) %>% 
-    filter(
-      price > quantile(price,0.05),
-      price < quantile(df$price,0.99)
-    ) %>% 
+    # filter(
+    #   price > quantile(price,0.05),
+    #   price < quantile(df$price,0.99)
+    # ) %>% 
     mutate(
       manufacturer = ifelse(is.na(manufacturer), 'NAN_cat', manufacturer),
       # odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
@@ -382,7 +382,7 @@ df1 =
     lat = normalize(lat),
     long = normalize(long)) %>% 
     filter(
-    price > quantile(df1$price, 0.02),
+    price > quantile(df1$price, 0.08),
     price < quantile(df1$price, 0.98)
     )
 

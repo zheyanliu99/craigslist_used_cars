@@ -127,7 +127,7 @@ p1 + p2
 
 From the first price histogram, there is clearly two vertices of the price, and the price is relatively skewed to the left. The reason is that 689 out of 1698 observations in the dataset is manufacturered by Tesla, and Tesla has a higher price than most of other brands. 
 
-In addition, there are some outliers in the dataset, it contains some prices equal or very close to 0. Therefore, we will remove the 2% records with low price in the training data.
+In addition, there are some errorness in the dataset, it contains some prices equal or very close to 0. We remove the 7% lowest price records in the dataset (7% quantile on price is quantile(df$price, 0.07)).
 
 ## Price vs category variables
 
@@ -240,11 +240,218 @@ Conduct model preparation with exact following steps
 * Using MinMaxScaler to scale all continuous variable in range [0, 1] so that the Lasso coefficients are comparable.
 * Remove the 2% records with low price in the training set.
 
+```{r, echo=FALSE}
+calc_mode <- function(x){
+  
+  # List the distinct / unique values
+  distinct_values <- unique(x)
+  
+  # Count the occurrence of each distinct value
+  distinct_tabulate <- tabulate(match(x, distinct_values))
+  
+  # Return the value with the highest occurrence
+  distinct_values[which.max(distinct_tabulate)]
+}
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+
+df1 = 
+  df %>% 
+    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state, lat , long) %>% 
+    # filter(
+    #   price > quantile(price,0.05),
+    #   price < quantile(df$price,0.99)
+    # ) %>% 
+    mutate(
+      manufacturer = ifelse(is.na(manufacturer), 'NAN_cat', manufacturer),
+      # odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
+      title_status = ifelse(is.na(title_status), 'NAN_cat', title_status)
+      # year = ifelse(is.na(year), mean(year, na.rm=TRUE), year),
+    ) %>% 
+    mutate(
+      condition = as.factor(condition),
+      condition = fct_reorder(condition, price, median),
+      
+      title_status = as.factor(title_status),
+      title_status = fct_reorder(title_status, price, median),
+      
+      manufacturer = as.factor(manufacturer),
+      transmission = as.factor(transmission),
+      drive = as.factor(drive),
+      type = as.factor(type),
+      paint_color = as.factor(paint_color),
+      state = as.factor(state)
+           ) %>% 
+  mutate(
+    # category impute
+    condition = replace_na(condition, calc_mode(df %>% filter(!is.na(condition))  %>%  pull(condition))),
+    title_status = replace_na(title_status, calc_mode(df %>% filter(!is.na(title_status))  %>%  pull(title_status))),
+    transmission = replace_na(transmission, calc_mode(df %>% filter(!is.na(transmission))  %>%  pull(transmission))),
+    drive = replace_na(drive, calc_mode(df %>% filter(!is.na(drive))  %>%  pull(drive))),
+    type = replace_na(type, calc_mode(df %>% filter(!is.na(type))  %>%  pull(type))),
+    paint_color = replace_na(paint_color, calc_mode(df %>% filter(!is.na(paint_color))  %>%  pull(paint_color))),
+    
+    # continuous impute
+    odometer = ifelse(is.na(odometer), median(odometer, na.rm=TRUE), odometer),
+    year = ifelse(is.na(year), median(year, na.rm=TRUE), year),
+    lat = ifelse(is.na(lat), median(lat, na.rm=TRUE), lat),
+    long = ifelse(is.na(long), median(long, na.rm=TRUE), long),
+    
+    # continuous MinMaxScalar
+    odometer = normalize(odometer),
+    year = normalize(year),
+    lat = normalize(lat),
+    long = normalize(long)) %>% 
+  filter(
+    price > quantile(df$price, 0.07)
+  )
+
+
+# Create Train and Test
+indexTrain = 
+  createDataPartition(
+    y = df1$price,
+    p = 0.8,
+    list = FALSE)
+
+train_df = df1[indexTrain,]
+
+train_df = 
+  train_df %>% 
+      filter(
+      price > quantile(df1$price, 0.01),
+      price < quantile(df1$price, 0.99))
+
+test_df = df1[-indexTrain,]
+```
+
 ## Building model and tuning parameters
 
-## Model performance on the test set
+Use cross validation to select the best parameter or parameter combination for each model.
+
+### Lasso
+
+
+```{r, echo=FALSE}
+lasso.fit <- train(price~.,
+                   data = train_df,
+                   method = "glmnet",
+                   metric = 'RMSE',
+                   tuneGrid = expand.grid(alpha = 1, 
+                                          lambda = exp(seq(5, -2, length=300))),
+                   trControl = trainControl(method = "cv"))
+
+```
+
+The parameter $\lambda$ controls the L1 Regularization, the bigger the $\lambda$, the fewer variables in the model. Set the candidate values of $\lambda$ to be from `r exp(-2)` to `r exp(-5)` with 300 steps, the best-tune $\lambda$ is `r lasso.fit$bestTune[,2]`.
+
+### Regression Tree
+
+
+```{r, echo=FALSE}
+tree.fit <- train(price~.,
+                   data = train_df,
+                   method = "rpart2", 
+                   tuneLength = 10, 
+    trControl = trainControl(method = "cv"))
+
+tree.fit$bestTune[,1]
+```
+
+The parameter *max tree depth* determines how many splits/leaves the tree can get. A lower *max tree depth* may result in underfitting while a higher *max tree depth* can lead to overfitting. Set the candidate values of parameter to be 1 to 10 with step of 1, the  best-tune *max tree depth* is `r tree.fit$bestTune[,1]`
+
+### Gradient Boosting Regression Tree
+
+
+
+```{r, echo=FALSE}
+grid<-expand.grid(.n.trees=seq(200,500,by=100),.interaction.depth=seq(2,7,by=1),.shrinkage=c(.05,.1),
+                  .n.minobsinnode=10)
+
+
+gbm.train<-train(price~.,
+                 data=train_df,
+                 method='gbm',
+                 trControl=trainControl(method = "cv"),
+                 tuneGrid=grid)
+
+gbm.train$bestTune[, 2]
+```
+
+There are several parameters in the GBM model. *num of trees* controls the number of estimators/base-trees in the ensemble model.*interaction depth* is similar to *max tree depth* in the Regression Tree, it determines the highest level of variable interactions allowed while training the model.  *shrinkage* is considered as the learning rate. It is used for reducing, the impact of each additional fitted base-tree. For *num of trees* and *interaction depth*, small value may cost underfitting and the bigger one can result in overfitting while *shrinkage* does just the opposite.
+
+Set the range for *num of trees* to be 200 to 500 with step of 100, the range for *interaction depth* to be 2 to 7 with step of 1 and *shrinkage* to be 0.05 or 0.1. The best-tune *num of trees* is `r gbm.train$bestTune[, 1]`, *interaction depth* `r gbm.train$bestTune[, 2]` is and *shrinkage* is `r gbm.train$bestTune[, 3]`
+
+
+### Important variables
+
+
+
+## Model performance
+
+```{r}
+set.seed(777)
+res = 
+  resamples(list(LASSO = lasso.fit,
+                 TREE = tree.fit,
+                 GBM = gbm.train))
+
+cv_res = res$values
+p1 = 
+  cv_res %>% 
+    as.tibble() %>% 
+    select('LASSO~RMSE', 'TREE~RMSE', 'GBM~RMSE') %>% 
+    pivot_longer(c('LASSO~RMSE', 'TREE~RMSE', 'GBM~RMSE'), 
+                 names_to = 'model',
+                 values_to = 'RMSE') %>% 
+    mutate(
+      model = ifelse(model=='LASSO~RMSE', 'LASSO', model),
+      model = ifelse(model=='TREE~RMSE', 'TREE', model),
+      model = ifelse(model=='GBM~RMSE', 'GBM', model),
+      model = as.factor(model),
+      model = fct_reorder(model, -RMSE, median)
+    ) %>% 
+    ggplot(aes(x=model, y=RMSE, fill = model)) + geom_boxplot()
+
+pred_y = predict(lasso.fit, newdata = as.tibble(test_df))
+rmse = sqrt(mean((pred_y - test_df$price)^2)) 
+
+pred_y = predict(tree.fit, newdata = as.tibble(test_df))
+rmse = sqrt(mean((pred_y - test_df$price)^2)) 
+
+pred_y = predict(gbm.train, newdata = as.tibble(test_df))
+rmse = sqrt(mean((pred_y - test_df$price)^2)) 
+
+
+y_compare_df = 
+  tibble(pred = pred_y,
+         actual = test_df$price) %>% 
+  arrange(actual) %>% 
+    pivot_longer(
+      cols = pred:actual,
+      names_to = 'type',
+      values_to = 'price'
+    ) 
+
+y_compare_df %>% 
+  mutate(
+    num = seq(1, nrow(y_compare_df)),
+    type = as.factor(type)
+         ) %>% 
+  ggplot(aes(x = num, y = price), color = type) + 
+  geom_point(aes(colour = type)) + 
+  theme(legend.position="right")
+
+```
+
+
 
 ## Model Limitations
+
+
 
 # Conclusions
 
