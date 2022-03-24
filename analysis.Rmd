@@ -2,11 +2,18 @@
 title: "analysis"
 author: "Zheyan Liu"
 date: "3/18/2022"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(caret)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -27,13 +34,19 @@ scale_fill_discrete = scale_fill_viridis_d
 
 # Data Processing
 
-Read data
+## Drop 2% head and tail data
+
+Read data and only keep fuel = 'electric'
 
 ```{r pressure, echo=FALSE}
-df = read_csv('data/vehicles.csv')
+df = read_csv('data/vehicles.csv', show_col_types = FALSE)
 df = 
   df %>% 
-  filter(fuel == 'electric')
+  filter(fuel == 'electric') %>% 
+  filter(
+      price > quantile(price,0.02),
+      price < quantile(df$price,0.98)
+    )
 ```
 
 ## Missing variables
@@ -41,7 +54,7 @@ df =
 ### Missing rate
 
 ```{r}
-sapply(X = df, FUN = function(x) sum(is.na(x)))/nrow(df)
+as.data.frame(sapply(X = df, FUN = function(x) sum(is.na(x)))/nrow(df))  %>% knitr::kable(col.names = "Missing rate")
 ```
 
 ### MAR or MNAR
@@ -52,10 +65,6 @@ Impute as ‘NAN’ for analysis
 df1 = 
   df %>% 
     select(price, year, manufacturer, model, condition, odometer, title_status, transmission,drive, type, paint_color, state) %>% 
-    filter(
-      price > quantile(price,0.02),
-      price < quantile(df$price,0.98)
-    ) %>% 
     mutate(
       manufacturer = ifelse(is.na(manufacturer), 'NAN', manufacturer),
       model = ifelse(is.na(manufacturer), 'NAN', manufacturer),
@@ -159,20 +168,37 @@ Create new attribute 'NAN' for MNAR
 ```{r}
 df1 = 
   df %>% 
-    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state) %>% 
+    select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state, lat , long) %>% 
     filter(
       price > quantile(price,0.05),
       price < quantile(df$price,0.99)
     ) %>% 
     mutate(
-      manufacturer = ifelse(is.na(manufacturer), 'NAN', manufacturer),
-      odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
-      title_status = ifelse(is.na(title_status), 'NAN', title_status)
-    )
+      manufacturer = ifelse(is.na(manufacturer), 'NAN_cat', manufacturer),
+      # odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
+      title_status = ifelse(is.na(title_status), 'NAN_cat', title_status)
+      # year = ifelse(is.na(year), mean(year, na.rm=TRUE), year),
+    ) %>% 
+    mutate(
+      condition = as.factor(condition),
+      condition = fct_reorder(condition, price, median),
+      
+      title_status = as.factor(title_status),
+      title_status = fct_reorder(title_status, price, median),
+      
+      manufacturer = as.factor(manufacturer),
+      transmission = as.factor(transmission),
+      drive = as.factor(drive),
+      type = as.factor(type),
+      paint_color = as.factor(paint_color),
+      state = as.factor(state)
+           ) 
 ```
 
 
 # Analysis
+
+Analysis are done without imputing MAR
 
 ## Dependent variable price
 
@@ -296,13 +322,77 @@ p7 =
 
 ```
 
+### Lat and Long
 
+```{r, warning=FALSE}
+library(leaflet)
+qpal <- colorQuantile("YlOrRd", df1$price, n = 4)
 
+df1 %>% 
+  leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addCircles(lng = ~long, lat = ~lat, weight = 1, stroke = FALSE, radius = ~18000, color = ~qpal(price), opacity = 0.75, fillOpacity = 0.75) %>%
+  addLegend("topright", pal = qpal, values = ~price, 
+            title = "Price quantile", opacity = 0.75) %>% 
+  setView(-97, 40, zoom = 4)
+```
 
 
 # Model
 
-## Regression (Do not use it!!!)
+## Impute with mode
+
+Impute with mode for category variables, median for continuous variables, MinMaxScalar for continuous variable
+
+
+```{r}
+calc_mode <- function(x){
+  
+  # List the distinct / unique values
+  distinct_values <- unique(x)
+  
+  # Count the occurrence of each distinct value
+  distinct_tabulate <- tabulate(match(x, distinct_values))
+  
+  # Return the value with the highest occurrence
+  distinct_values[which.max(distinct_tabulate)]
+}
+
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+
+df1 = 
+  df1 %>% 
+  mutate(
+    # category impute
+    condition = replace_na(condition, calc_mode(df %>% filter(!is.na(condition))  %>%  pull(condition))),
+    title_status = replace_na(title_status, calc_mode(df %>% filter(!is.na(title_status))  %>%  pull(title_status))),
+    transmission = replace_na(transmission, calc_mode(df %>% filter(!is.na(transmission))  %>%  pull(transmission))),
+    drive = replace_na(drive, calc_mode(df %>% filter(!is.na(drive))  %>%  pull(drive))),
+    type = replace_na(type, calc_mode(df %>% filter(!is.na(type))  %>%  pull(type))),
+    paint_color = replace_na(paint_color, calc_mode(df %>% filter(!is.na(paint_color))  %>%  pull(paint_color))),
+    
+    # continuous impute
+    odometer = ifelse(is.na(odometer), median(odometer, na.rm=TRUE), odometer),
+    year = ifelse(is.na(year), median(year, na.rm=TRUE), year),
+    lat = ifelse(is.na(lat), median(lat, na.rm=TRUE), lat),
+    long = ifelse(is.na(long), median(long, na.rm=TRUE), long),
+    
+    # continuous MinMaxScalar
+    odometer = normalize(odometer),
+    year = normalize(year),
+    lat = normalize(lat),
+    long = normalize(long)
+    
+  ) 
+
+head(df1) %>% knitr::kable()
+```
+
+
+## Regression (Not Used for model!)
 
 Delete all na records, get adjusted R-square 0.8974
 
@@ -314,9 +404,99 @@ summary(reg)
 ## Lasso
 
 
+Check missing rate to ensure no missing values
+
+
+```{r}
+as.data.frame(sapply(X = df1, FUN = function(x) sum(is.na(x)))/nrow(df1))  %>% knitr::kable(col.names = "Missing rate")
+```
+
+Fit Lasso model
+
+```{r}
+set.seed(777)
+lasso.fit <- train(price~.,
+                   data = df1,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 1, 
+                                          lambda = exp(seq(5, -2, length=300))),
+                   trControl = trainControl(method = "cv"))
+
+lasso.fit2 <- train(price~.,
+                   data = df1,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 1, 
+                                          lambda = exp(seq(8, -1, length=10))),
+                   trControl = trainControl(method = "cv"))
+```
+
+
+Best tune parameters
+
+```{r}
+lasso.fit$bestTune %>% knitr::kable()
+```
+
+Coefficients
+
+```{r}
+coef = coef(lasso.fit$finalModel, lasso.fit$bestTune$lambda)
+coef[,1][coef[,1] != 0] %>% knitr::kable(col.names = "Non-zero Coefficients")
+```
 
 ## Regression Tree
 
+```{r}
+rpartTune <- train(price~.,
+                   data = df1,
+                   method = "rpart2", 
+                   tuneLength = 10, 
+    trControl = trainControl(method = "cv"))
+plot(rpartTune)
+```
+
+```{r}
+library(rpart)
+rpartTree <- rpart(price~., data = df1, maxdepth = 5)
+rpartTree
+```
 
 
 ## GBDT
+
+```{r,warning=FALSE}
+library(gbm)
+grid<-expand.grid(.n.trees=seq(200,500,by=100),.interaction.depth=seq(1,5,by=1),.shrinkage=c(.05,.1),
+                  .n.minobsinnode=10)
+
+
+gbm.train<-train(price~.,data=df1,method='gbm',trControl=trainControl(method = "cv"),tuneGrid=grid)
+
+
+gbm.train$results
+```
+
+
+
+# Conclusion
+
+
+## Prediction
+
+RMSE
+
+```{r}
+set.seed(777)
+res = 
+  resamples(list(LASSO = lasso.fit,
+                 LASSO2 = lasso.fit2,
+                 TREE = rpartTune,
+                 GBM2 = gbm.train))
+summary(res)
+
+
+mean(df$price)
+```
+
+
+
