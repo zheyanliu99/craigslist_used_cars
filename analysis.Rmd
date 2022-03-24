@@ -380,9 +380,11 @@ df1 =
     odometer = normalize(odometer),
     year = normalize(year),
     lat = normalize(lat),
-    long = normalize(long)
-    
-  ) 
+    long = normalize(long)) %>% 
+    filter(
+    price > quantile(df1$price, 0.02),
+    price < quantile(df1$price, 0.98)
+    )
 
 head(df1) %>% knitr::kable()
 ```

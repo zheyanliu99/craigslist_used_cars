@@ -75,11 +75,11 @@ We used data from [Craigslist](https://newyork.craigslist.org/), which is the wo
 
 ## Research Questions
 
-* Find appropriate way to handle missing values
+* Find appropriate way to handle missing values.
 
-* Conduct exploratory data analysis to find interesting facts about the data
+* Conduct exploratory data analysis to find interesting facts about the data.
 
-* Build and compare machine learning models to find the best one for the prediction task
+* Build and compare machine learning models to find the best one for the prediction task.
 
 ## Data preparation
 
@@ -125,7 +125,9 @@ p2 =
 p1 + p2
 ```
 
-From the first price histogram, there is clearly two vertices of the price, and the price is relatively skewed to the left. The reason is that 689 out of 1698 observations in the dataset is manufacturered by Tesla, and Tesla has a higher price than most of other brands.
+From the first price histogram, there is clearly two vertices of the price, and the price is relatively skewed to the left. The reason is that 689 out of 1698 observations in the dataset is manufacturered by Tesla, and Tesla has a higher price than most of other brands. 
+
+In addition, there are some outliers in the dataset, it contains some prices equal or very close to 0. Therefore, we will remove the 2% records with low price in the training data.
 
 ## Price vs category variables
 
@@ -212,9 +214,9 @@ p7 =
 
 Despite some common knowledge, here is some interesting factors from these boxplot:
 
-* White cars has the highest price while red ones has the lowest median price. However, prices of red cars are scattered
-* 4wd cars has the highest price and the reason behind this ican be car type. 123 out of 166 4wd cars are SUV and Sedan
-* Electric cars New Jersy has the highest median price while California is one of the state with the lowest median price
+* White cars has the highest price while red ones has the lowest median price. However, prices of red cars are scattered.
+* 4wd cars has the highest price and the reason behind this ican be car type. 123 out of 166 4wd cars are SUV and Sedan.
+* Electric cars New Jersy has the highest median price while California is one of the states with the lowest median price.
 
 ## Price map
 
@@ -228,6 +230,21 @@ Most car sales takes place near the Coast or the Great Lakes Region. In addition
 
 # Models
 
+I used Lasso, Regression Tree and Gradient Boosting Tree to predict the price. I used Lasso because there is a considerable number of variables (239 including dummy variables) in the training data. And L1 regularization can help reduce dimension and avoid multicollinearity. In addition, I selected Regression Tree because it is easy to interpret and it captures the interaction between variables. Finally, I adopted the ensemble model GBM to better utilize the good property of tree-based models, a single tree can have high bias while boosting methods fits the residual of last round to gradually reduce bias.
+
+## Model preparation
+
+Conduct model preparation with exact following steps
+
+* Impute the data and divide the data into train set and test set. Test set takes up 20%.
+* Using MinMaxScaler to scale all continuous variable in range [0, 1] so that the Lasso coefficients are comparable.
+* Remove the 2% records with low price in the training set.
+
+## Building model and tuning parameters
+
+## Model performance on the test set
+
+## Model Limitations
 
 # Conclusions
 
