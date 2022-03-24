@@ -509,7 +509,7 @@ y_compare_df %>%
 
 ### Important variables
 
-```{r}
+```{r,fig.height = 10, fig.width = 8, fig.asp=1, echo=FALSE}
 coef = coef(lasso.fit$finalModel, lasso.fit$bestTune$lambda)
 # coef[,1][coef[,1] != 0]
 # rownames(coef)
@@ -528,10 +528,56 @@ coef_df =
 p1 = 
   coef_df %>% 
     ggplot(aes(x=reorder(variable, abs_coef, median, na.rm = TRUE), y=coefficients, fill=positive)) +
-    geom_bar(stat="identity") + coord_flip() + theme(legend.position="none")
+    geom_bar(stat="identity") + coord_flip() + theme(legend.position="none") + labs(x="variable")
 
-p1
+
+
+imp_tree = varImp(tree.fit, scale = TRUE)
+imp_tree_df = 
+  tibble(variable = rownames(varImp(tree.fit)$importance),
+         coefficients = as.vector(varImp(tree.fit)$importance)) %>% 
+  filter(coefficients!=0,
+         variable != '(Intercept)') %>% 
+  mutate(abs_coef = abs(coefficients),
+         positive = ifelse(coefficients>0, TRUE, FALSE),
+         variable = as.factor(variable)) %>% 
+  mutate(variable = variable,
+         coefficients = coefficients$Overall) %>% 
+  arrange(-abs_coef) %>% 
+  head(15) %>% 
+  select(variable, coefficients, positive)
+
+p2 =
+  imp_tree_df %>% 
+      ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
+      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 21)) + labs(x="variable", y = 'importance')
+
+
+
+imp_gbm = varImp(gbm.train, scale = TRUE)
+imp_gbm_df = 
+  tibble(variable = rownames(varImp(gbm.train)$importance),
+         coefficients = as.vector(varImp(gbm.train)$importance)) %>% 
+  filter(coefficients!=0,
+         variable != '(Intercept)') %>% 
+  mutate(abs_coef = abs(coefficients),
+         positive = ifelse(coefficients>0, TRUE, FALSE),
+         variable = as.factor(variable)) %>% 
+  mutate(variable = variable,
+         coefficients = coefficients$Overall) %>% 
+  arrange(-abs_coef) %>% 
+  head(15) %>% 
+  select(variable, coefficients, positive)
+
+p3 = 
+  imp_gbm_df %>% 
+      ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
+      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 21)) + labs(x="variable", y = 'importance')
+
+p1 / (p2 + p3)
 ```
+
+The plot shows the most important 15 variables for each model. For the Lasso model, the variable importance is the coefficients. For all three models, variable year and odometer are among the top three most important variables. From the coefficients of Lasso, the car price is negatively correlated with the odometer and positively related with manufactor year. In addition, they have some shared important variables such as if manufactored by tesla, whether the car type is SUV and whether the car is rear-Wheel drive.
 
 ## Model Limitations
 
