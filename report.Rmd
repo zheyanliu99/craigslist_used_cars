@@ -1,30 +1,74 @@
 ---
-title: "report"
-author: "Zheyan Liu"
-date: "3/23/2022"
-output: html_document
----
+title: "2021 Craigslist used electric cars price Prediction"
+author: "Zheyan Liu (zl3119)"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+--- 
+
+\newpage
+
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(caret)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .7,
+  out.width = "95%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = 'bottom'))
+
+options(
+  ggplot2.continuous.colour = 'viridis',
+  ggplot2.continuous.fill = 'viridis'
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 
-## R Markdown
+# Introduction
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r, include=FALSE}
+df_raw = read_csv('data/vehicles.csv', show_col_types = FALSE)
+df = 
+  df_raw %>% 
+  filter(fuel == 'electric') %>% 
+  filter(
+      # price > quantile(price,0.02),
+      # price < quantile(price,0.98)
+    )
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+With the soaring oil price, more and more people are considering buying an electric car to save money. We would like to build models to help predict the used electric car price so that customers can use this model to determine if the deal is reasonable. 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+We used data from [Craigslist](https://newyork.craigslist.org/), which is the world's largest collection of used vehicles for sale. The [original data](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data) contains price of used car from Apr 2011 to May 2011, it contains `r nrow(df_raw)` observations and  `r ncol(df_raw)` variables. Since we are only interested in cars fueled by electricity, data is reduced to `r nrow(df)` observations.
+
+
+## Research Questions
+
+
+
+## Data preparation
+
+
+
+# Exploratory analysis
+
+
+# Models
+
+
+# Conclusions
+

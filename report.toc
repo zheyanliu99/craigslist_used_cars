@@ -1,0 +1,6 @@
+\contentsline {section}{Introduction}{2}{section*.2}%
+\contentsline {subsection}{Research Questions}{2}{section*.3}%
+\contentsline {subsection}{Data preparation}{2}{section*.4}%
+\contentsline {section}{Exploratory analysis}{2}{section*.5}%
+\contentsline {section}{Models}{2}{section*.6}%
+\contentsline {section}{Conclusions}{2}{section*.7}%
