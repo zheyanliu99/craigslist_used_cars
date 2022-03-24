@@ -8,7 +8,11 @@
 \contentsline {section}{Models}{5}{section*.9}%
 \contentsline {subsection}{Model preparation}{5}{section*.10}%
 \contentsline {subsection}{Building model and tuning parameters}{6}{section*.11}%
-\contentsline {subsection}{Model performance on the test set}{6}{section*.12}%
-\contentsline {subsection}{Model Limitations}{6}{section*.13}%
-\contentsline {section}{Conclusions}{6}{section*.14}%
-\contentsline {section}{Appendix}{6}{section*.15}%
+\contentsline {subsubsection}{Lasso}{6}{section*.12}%
+\contentsline {subsubsection}{Regression Tree}{6}{section*.13}%
+\contentsline {subsubsection}{Gradient Boosting Regression Tree}{6}{section*.14}%
+\contentsline {subsubsection}{Important variables}{145}{section*.15}%
+\contentsline {subsection}{Model performance}{145}{section*.16}%
+\contentsline {subsection}{Model Limitations}{146}{section*.17}%
+\contentsline {section}{Conclusions}{146}{section*.18}%
+\contentsline {section}{Appendix}{146}{section*.19}%

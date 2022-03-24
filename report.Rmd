@@ -279,11 +279,22 @@ df1 =
       title_status = fct_reorder(title_status, price, median),
       
       manufacturer = as.factor(manufacturer),
+      manufacturer = fct_reorder(manufacturer, price, median),
+      
       transmission = as.factor(transmission),
+      transmission = fct_reorder(transmission, price, median),
+      
       drive = as.factor(drive),
+      drive = fct_reorder(drive, price, median),
+      
       type = as.factor(type),
+      type = fct_reorder(type, price, median),
+      
       paint_color = as.factor(paint_color),
+      paint_color = fct_reorder(paint_color, price, median),
+      
       state = as.factor(state)
+      state = fct_reorder(state, price, median)
            ) %>% 
   mutate(
     # category impute
@@ -388,11 +399,17 @@ Set the range for *num of trees* to be 200 to 500 with step of 100, the range fo
 
 ### Important variables
 
+```{r}
+coef = coef(lasso.fit$finalModel, lasso.fit$bestTune$lambda)
+coef[,1][coef[,1] != 0]
+coef
+
+```
 
 
 ## Model performance
 
-```{r}
+```{r,echo=FALSE}
 set.seed(777)
 res = 
   resamples(list(LASSO = lasso.fit,
@@ -414,16 +431,15 @@ p1 =
       model = as.factor(model),
       model = fct_reorder(model, -RMSE, median)
     ) %>% 
-    ggplot(aes(x=model, y=RMSE, fill = model)) + geom_boxplot()
+    ggplot(aes(x=model, y=RMSE, fill = model)) + geom_boxplot() + ggtitle('Cross Validation RMSE')
 
 pred_y = predict(lasso.fit, newdata = as.tibble(test_df))
-rmse = sqrt(mean((pred_y - test_df$price)^2)) 
-
-pred_y = predict(tree.fit, newdata = as.tibble(test_df))
-rmse = sqrt(mean((pred_y - test_df$price)^2)) 
-
-pred_y = predict(gbm.train, newdata = as.tibble(test_df))
-rmse = sqrt(mean((pred_y - test_df$price)^2)) 
+rmse_lasso_original = sqrt(mean((pred_y - test_df$price)^2)) 
+pred_y = as.tibble(pred_y)
+pred_y = 
+  pred_y %>% 
+  mutate(value = ifelse(value < 0 ,  0, value))
+rmse_lasso = sqrt(mean((pred_y$value - test_df$price)^2)) 
 
 
 y_compare_df = 
@@ -436,6 +452,7 @@ y_compare_df =
       values_to = 'price'
     ) 
 
+p2 = 
 y_compare_df %>% 
   mutate(
     num = seq(1, nrow(y_compare_df)),
@@ -443,7 +460,58 @@ y_compare_df %>%
          ) %>% 
   ggplot(aes(x = num, y = price), color = type) + 
   geom_point(aes(colour = type)) + 
-  theme(legend.position="right")
+  theme(legend.position="right") + ggtitle(paste0('Testset RMSE of LASSO:', as.character(as.integer(rmse_lasso))))
+
+
+pred_y = predict(tree.fit, newdata = as.tibble(test_df))
+rmse_tree = sqrt(mean((pred_y - test_df$price)^2)) 
+
+y_compare_df = 
+  tibble(pred = pred_y,
+         actual = test_df$price) %>% 
+  arrange(actual) %>% 
+    pivot_longer(
+      cols = pred:actual,
+      names_to = 'type',
+      values_to = 'price'
+    ) 
+
+p3 = 
+y_compare_df %>% 
+  mutate(
+    num = seq(1, nrow(y_compare_df)),
+    type = as.factor(type)
+         ) %>% 
+  ggplot(aes(x = num, y = price), color = type) + 
+  geom_point(aes(colour = type)) + 
+  theme(legend.position="right") + ggtitle(paste0('Testset RMSE of TREE:', as.character(as.integer(rmse_tree))))
+
+
+pred_y = predict(gbm.train, newdata = as.tibble(test_df))
+rmse_gbm = sqrt(mean((pred_y - test_df$price)^2)) 
+
+
+y_compare_df = 
+  tibble(pred = pred_y,
+         actual = test_df$price) %>% 
+  arrange(actual) %>% 
+    pivot_longer(
+      cols = pred:actual,
+      names_to = 'type',
+      values_to = 'price'
+    ) 
+
+p4 = 
+y_compare_df %>% 
+  mutate(
+    num = seq(1, nrow(y_compare_df)),
+    type = as.factor(type)
+         ) %>% 
+  ggplot(aes(x = num, y = price), color = type) + 
+  geom_point(aes(colour = type)) + 
+  theme(legend.position="right") + ggtitle(paste0('Testset RMSE of GBM:', as.character(as.integer(rmse_gbm))))
+
+(p1 + p2) / (p3 + p4)
 
 ```
 
