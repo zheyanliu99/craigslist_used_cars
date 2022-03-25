@@ -11,8 +11,8 @@
 \contentsline {subsubsection}{Lasso}{6}{section*.12}%
 \contentsline {subsubsection}{Regression Tree}{6}{section*.13}%
 \contentsline {subsubsection}{Gradient Boosting Regression Tree}{6}{section*.14}%
-\contentsline {subsubsection}{Important variables}{145}{section*.15}%
-\contentsline {subsection}{Model performance}{145}{section*.16}%
-\contentsline {subsection}{Model Limitations}{146}{section*.17}%
-\contentsline {section}{Conclusions}{146}{section*.18}%
-\contentsline {section}{Appendix}{146}{section*.19}%
+\contentsline {subsection}{Model performance}{7}{section*.15}%
+\contentsline {subsubsection}{Important variables}{8}{section*.16}%
+\contentsline {subsection}{Model Limitations}{8}{section*.17}%
+\contentsline {section}{Conclusions}{9}{section*.18}%
+\contentsline {section}{Appendix}{9}{section*.19}%
