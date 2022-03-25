@@ -559,7 +559,7 @@ imp_tree_df =
 p2 =
   imp_tree_df %>% 
       ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
-      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 30)) + labs(x="variable", y = 'importance')
+      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 25, size=7.5)) + labs(x="variable", y = 'importance')
 
 
 library(gbm)
@@ -581,7 +581,7 @@ imp_gbm_df =
 p3 = 
   imp_gbm_df %>% 
       ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
-      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 30)) + 
+      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 25, size=7.5)) + 
   labs(x="variable", y = 'importance')
 
 p1 / (p2 + p3)
@@ -608,3 +608,5 @@ Some conlusions from the data preparation step, analysis step and modeling step:
 
 # Appendix
 
+* All the data, code and documents are in the github, check out the repository **[here](https://github.com/zheyanliu99/craigslist_used_cars.git)**
+* The report is within three pages excluding plots and tables, check out the excluded version **[here](https://github.com/zheyanliu99/craigslist_used_cars/blob/main/report_noplot.pdf)**
