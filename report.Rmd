@@ -1,5 +1,5 @@
 ---
-title: "2021 Craigslist used electric cars price Prediction"
+title: "2021 Craigslist used electric car price prediction"
 author: "Zheyan Liu (zl3119)"
 output:
   pdf_document:
@@ -357,7 +357,7 @@ lasso.fit <- train(price~.,
 
 ```
 
-The parameter $\lambda$ controls the L1 Regularization, the bigger the $\lambda$, the fewer variables in the model. Set the candidate values of $\lambda$ to be from `r exp(-2)` to `r exp(-5)` with 300 steps, the best-tune $\lambda$ is `r lasso.fit$bestTune[,2]`.
+The parameter $\lambda$ controls the L1 Regularization, the bigger the $\lambda$, the fewer variables in the model. Set the candidate values of $\lambda$ to be from `r exp(-2)` to `r exp(5)` with 300 steps, the best-tune $\lambda$ is `r lasso.fit$bestTune[,2]`.
 
 ### Regression Tree
 
@@ -516,7 +516,7 @@ The cross validation median RMSE LASSO(6681) > TREE(6054) >> GBM(4274). The reas
 
 What is more, I plotted the scatterplot of actual and predicted value. Note that Lasso can predict the price to be negative values, which is not reasonable in practice. I use a simple function $price_{pred}=max(0,price_{pred})$ to correct that. On the test set, it is clear that these model do not fit well on extreme values (very high or very low price). Also, the prediction of regression tree looks like a step function.
 
-### Important variables
+## Important variables
 
 ```{r,fig.height = 10, fig.width = 8, fig.asp=1, echo=FALSE}
 coef = coef(lasso.fit$finalModel, lasso.fit$bestTune$lambda)
