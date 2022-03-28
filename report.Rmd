@@ -70,7 +70,7 @@ df %>%
 With the soaring oil price, more and more people are considering buying an electric car to save money. We would like to build models to help predict the used electric car price so that customers can use this model to determine whether the deal is reasonable. 
 
 
-We used data from [Craigslist](https://newyork.craigslist.org/), which is the world's largest collection of used vehicles for sale. The [original data](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data) contains price of used car from Apr 2011 to May 2011, it contains `r nrow(df_raw)` observations and  `r ncol(df_raw)` variables. Since we are only interested in cars fueled by electricity, data is reduced to `r nrow(df)` observations.
+We used data from **[Craigslist](https://newyork.craigslist.org/)**, which is the world's largest collection of used vehicles for sale. The **[original data](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data)** contains price of used car from Apr 2021 to May 2021, it contains `r nrow(df_raw)` observations and  `r ncol(df_raw)` variables. Since we are only interested in cars fueled by electricity, data is reduced to `r nrow(df)` observations.
 
 
 ## Research Questions
@@ -598,7 +598,7 @@ The plot shows the most important 15 variables for each model. For the Lasso mod
 
 # Conclusions
 
-Some conlusions from the data preparation step, analysis step and modeling step:
+Some conclusions from the data preparation step, analysis step and modeling step:
 
 * I determined the missing pattern for missing variables and used mode imputation for categorical variables, median imputation for continuous variable
 * Some interesting facts about data are discovered such as large number of Tesla cars causing the price histogram to have two vertices. Another fact is the interesting distribution of electric car sales
