@@ -261,10 +261,6 @@ normalize <- function(x) {
 df1 = 
   df %>% 
     select(price, year, manufacturer, condition, odometer, title_status, transmission,drive, type, paint_color, state, lat , long) %>% 
-    # filter(
-    #   price > quantile(price,0.05),
-    #   price < quantile(df$price,0.99)
-    # ) %>% 
     mutate(
       manufacturer = ifelse(is.na(manufacturer), 'NAN_cat', manufacturer),
       # odometer = ifelse(is.na(odometer), mean(odometer, na.rm=TRUE), odometer),
@@ -296,29 +292,10 @@ df1 =
       state = as.factor(state),
       state = fct_reorder(state, price, median)
            ) %>% 
-  mutate(
-    # category impute
-    condition = replace_na(condition, calc_mode(df %>% filter(!is.na(condition))  %>%  pull(condition))),
-    title_status = replace_na(title_status, calc_mode(df %>% filter(!is.na(title_status))  %>%  pull(title_status))),
-    transmission = replace_na(transmission, calc_mode(df %>% filter(!is.na(transmission))  %>%  pull(transmission))),
-    drive = replace_na(drive, calc_mode(df %>% filter(!is.na(drive))  %>%  pull(drive))),
-    type = replace_na(type, calc_mode(df %>% filter(!is.na(type))  %>%  pull(type))),
-    paint_color = replace_na(paint_color, calc_mode(df %>% filter(!is.na(paint_color))  %>%  pull(paint_color))),
-    
-    # continuous impute
-    odometer = ifelse(is.na(odometer), median(odometer, na.rm=TRUE), odometer),
-    year = ifelse(is.na(year), median(year, na.rm=TRUE), year),
-    lat = ifelse(is.na(lat), median(lat, na.rm=TRUE), lat),
-    long = ifelse(is.na(long), median(long, na.rm=TRUE), long),
-    
-    # continuous MinMaxScalar
-    odometer = normalize(odometer),
-    year = normalize(year),
-    lat = normalize(lat),
-    long = normalize(long)) %>% 
-  filter(
+    filter(
     price > quantile(df$price, 0.07)
   )
+
 
 set.seed(777)
 # Create Train and Test
@@ -329,6 +306,56 @@ indexTrain =
     list = FALSE)
 
 train_df = df1[indexTrain,]
+train_df2 = train_df
+train_df = 
+  train_df %>% 
+    mutate(
+      # category impute
+      condition = replace_na(condition, calc_mode(train_df %>% filter(!is.na(condition))  %>%  pull(condition))),
+      title_status = replace_na(title_status, calc_mode(train_df %>% filter(!is.na(title_status))  %>%  pull(title_status))),
+      transmission = replace_na(transmission, calc_mode(train_df %>% filter(!is.na(transmission))  %>%  pull(transmission))),
+      drive = replace_na(drive, calc_mode(train_df %>% filter(!is.na(drive))  %>%  pull(drive))),
+      type = replace_na(type, calc_mode(train_df %>% filter(!is.na(type))  %>%  pull(type))),
+      paint_color = replace_na(paint_color, calc_mode(train_df %>% filter(!is.na(paint_color))  %>%  pull(paint_color))),
+      
+      # continuous impute
+      odometer = ifelse(is.na(odometer), median(train_df$odometer, na.rm=TRUE), odometer),
+      year = ifelse(is.na(year), median(train_df$year, na.rm=TRUE), year),
+      lat = ifelse(is.na(lat), median(train_df$lat, na.rm=TRUE), lat),
+      long = ifelse(is.na(long), median(train_df$long, na.rm=TRUE), long),
+      
+      # # continuous MinMaxScalar
+      # odometer = normalize(odometer),
+      # year = normalize(year),
+      # lat = normalize(lat),
+      # long = normalize(long)) 
+    )
+  
+
+test_df = df1[-indexTrain,]
+test_df = 
+  test_df %>% 
+    mutate(
+      # category impute
+      condition = replace_na(condition, calc_mode(train_df2 %>% filter(!is.na(condition))  %>%  pull(condition))),
+      title_status = replace_na(title_status, calc_mode(train_df2 %>% filter(!is.na(title_status))  %>%  pull(title_status))),
+      transmission = replace_na(transmission, calc_mode(train_df2 %>% filter(!is.na(transmission))  %>%  pull(transmission))),
+      drive = replace_na(drive, calc_mode(train_df2 %>% filter(!is.na(drive))  %>%  pull(drive))),
+      type = replace_na(type, calc_mode(train_df2 %>% filter(!is.na(type))  %>%  pull(type))),
+      paint_color = replace_na(paint_color, calc_mode(train_df2 %>% filter(!is.na(paint_color))  %>%  pull(paint_color))),
+      
+      # continuous impute
+      odometer = ifelse(is.na(odometer), median(train_df2$odometer, na.rm=TRUE), odometer),
+      year = ifelse(is.na(year), median(train_df2$year, na.rm=TRUE), year),
+      lat = ifelse(is.na(lat), median(train_df2$lat, na.rm=TRUE), lat),
+      long = ifelse(is.na(long), median(train_df2$long, na.rm=TRUE), long),
+      
+      # continuous MinMaxScalar
+      # odometer = normalize(odometer),
+      # year = normalize(year),
+      # lat = normalize(lat),
+      # long = normalize(long)) 
+)
 
 train_df = 
   train_df %>% 
@@ -336,7 +363,6 @@ train_df =
       price > quantile(df1$price, 0.01),
       price < quantile(df1$price, 0.99))
 
-test_df = df1[-indexTrain,]
 ```
 
 ## Building model and tuning parameters
@@ -352,12 +378,12 @@ lasso.fit <- train(price~.,
                    method = "glmnet",
                    metric = 'RMSE',
                    tuneGrid = expand.grid(alpha = 1, 
-                                          lambda = exp(seq(5, -2, length=300))),
+                                          lambda = exp(seq(6, -2, length=300))),
                    trControl = trainControl(method = "cv"))
 
 ```
 
-The parameter $\lambda$ controls the L1 Regularization, the bigger the $\lambda$, the fewer variables in the model. Set the candidate values of $\lambda$ to be from `r exp(-2)` to `r exp(5)` with 300 steps, the best-tune $\lambda$ is `r lasso.fit$bestTune[,2]`.
+The parameter $\lambda$ controls the L1 Regularization, the bigger the $\lambda$, the fewer variables in the model. Set the candidate values of $\lambda$ to be from `r exp(-2)` to `r exp(6)` with 300 steps, the best-tune $\lambda$ is `r lasso.fit$bestTune[,2]`.
 
 ### Regression Tree
 
