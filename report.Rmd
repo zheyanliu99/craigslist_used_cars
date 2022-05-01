@@ -474,7 +474,16 @@ xgb_var <- xgboost(data = data.matrix(subset(train_df, select = -price)),
 vip(xgb_var, num_features = 10)
 ```
 
-Parameters of XGBoost include *nrounds*, *eta*, *max_depth*, *colsample_bytree*, *subsample*, *gamma*, *min_child_weight*
+*nrounds* is the number of decision trees in the final model -- 500, 1000, 1500 were selected as options; 
+*eta* is analogous to learning rate in the model, makin the model more robust by shrinking weights -- 0.01 and 0.05 were seleced; *max_depth* is the max depth of a tree where higher depth will allow model to learn relations very specific to a particular sample -- 2, 4, 6 were selected as options; 
+*colsample_bytree* denotes the fraction of columns to be randomly samples for each tree -- the selection is from 0.5 to 0.9 with 0.08 as one step; 
+*subsample* denotes the fraction of observations to be randomly samples for each tree -- 0.5 and 1 were selected as options; 
+*gamma* specifies the minimum loss reduction required to make a split -- 0 and 50 were selected as options; 
+*min_child_weight* is the minimum sum of instance weight needed in a child -- 0 and 20 were selected as options.
+
+The optimal *nrounds* is `r bestTune[[1]]`, optimal *max_depth* is `r bestTune[[2]]`, optimal *eta* is `r bestTune[[3]]`, optimal *gamma* is `r bestTune[[4]]`, optimal *colsample_bytree* is `r bestTune[[5]]`, optimal *min_child_weight* is `r bestTune[[6]]`, and the optimal *subsample* is `r bestTune[[7]]`.
+
+RMSE for XGBoost is `r xgb.rmse`.
 
 ## Model performance
 
