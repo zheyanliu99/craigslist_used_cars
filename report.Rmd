@@ -425,7 +425,7 @@ Set the range for *num of trees* to be 200 to 500 with step of 100, the range fo
 
 ### XGBoost
 
-```{r}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
 set.seed(777)
 library(xgboost)
 library(pdp)
@@ -442,6 +442,7 @@ xgbGrid <- expand.grid(nrounds = c(500, 1000, 1500),
                        min_child_weight = c(0, 20)
                        )
 
+# simple grid
 xgbGrid <- expand.grid(nrounds = c(1000),
                        eta = c(0.05),
                        max_depth = c(4),
@@ -461,7 +462,7 @@ xgb.fit <- train(price ~ .,
 
 xgb.fit$bestTune
 
-plot(xgb.fit, highlight = TRUE)
+# plot(xgb.fit, highlight = TRUE)
 
 xgb.pred <- predict(xgb.fit, newdata = test_df, type = "raw")
 
@@ -481,6 +482,7 @@ xgb_var <- xgboost(data = data.matrix(subset(train_df, select = -price)),
                    subsample = xgb.fit$bestTune[[7]])
 
 # vip(xgb_var, num_features = 10)
+bestTune = xgb.fit$bestTune
 ```
 
 *nrounds* is the number of decision trees in the final model -- 500, 1000, 1500 were selected as options; 
@@ -765,23 +767,62 @@ The best model in cross validation and test set is XGBoost. However, XGBoost is 
 
 #### Partial dependence plots
 
-We have identified some relevant variables in the variable importance part, the two most important ones are manufacturertelsa and year. The next step is to attempt to understand how the
+We have identified some relevant variables in the variable importance part, important ones are year and odometer. The next step is to attempt to understand how the
 response variable changes based on these variables.
 We wull use partial dependence plots to plot the change in the average predicted value as specified feature(s) vary over their marginal distri-
 bution.
 
-```{r}
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
 pdp1.rf <- xgb.fit %>%
-  partial(pred.var = c("manufacturertelsa")) %>%
+  partial(pred.var = c("year")) %>%
   autoplot(train = train_df, rug = TRUE)
 pdp2.rf <- xgb.fit %>%
-  partial(pred.var = c("CRBI","CAtBat"), chull = TRUE) %>%
+  partial(pred.var = c("year","odometer"), chull = TRUE) %>%
   autoplot(train = train_df, rug = TRUE)
 grid.arrange(pdp1.rf, pdp2.rf, nrow = 1)
 
-train_df
 ```
 
+#### Individual conditional expectation curves
+
+ICE curves are an extension of partial dependence plots plots but, rather than plot the average marginal effect on the response
+variable, we plot the change in the predicted response variable for each observation as we vary each predictor
+variable.
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+ice1.rf <- xgb.fit %>%
+  partial(pred.var = "year",
+  grid.resolution = 100,
+  ice = TRUE) %>%
+  autoplot(train = train_df, alpha = .1) +
+  ggtitle("ICE, not centered")
+ice2.rf <- xgb.fit %>%
+  partial(pred.var = "year",
+  grid.resolution = 100,
+  ice = TRUE) %>%
+  autoplot(train = train_df, alpha = .1,
+  center = TRUE) +
+  ggtitle("ICE, centered")
+grid.arrange(ice1.rf, ice2.rf, nrow = 1)
+```
+
+#### Lime
+
+Once an explainer has been created using the lime() function, it can be used to explain the result of the model
+on new observations. The explain() function takes new observation along with the explainer and returns a
+data.frame with prediction explanations, one observation per row. The function plot_features() creates
+a compact visual representation of the explanations for each case and label combination in an explanation.
+Each extracted feature is shown with its weight, thus giving the importance of the feature in the label
+prediction.
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+explainer.rf <- lime(train_df %>% select(-price), xgb.fit)
+new_obs <- (test_df %>% select(-price))[1:6,]
+explanation.obs <- explain(new_obs,
+                           explainer.rf,
+                           n_features = 10)
+plot_features(explanation.obs)
+```
 
 
 # Conclusions

@@ -11,8 +11,13 @@
 \contentsline {subsubsection}{Lasso}{6}{section*.12}%
 \contentsline {subsubsection}{Regression Tree}{6}{section*.13}%
 \contentsline {subsubsection}{Gradient Boosting Regression Tree}{6}{section*.14}%
-\contentsline {subsection}{Model performance}{7}{section*.15}%
-\contentsline {subsection}{Important variables}{8}{section*.16}%
-\contentsline {subsection}{Model Limitations}{8}{section*.17}%
-\contentsline {section}{Conclusions}{9}{section*.18}%
-\contentsline {section}{Appendix}{9}{section*.19}%
+\contentsline {subsubsection}{XGBoost}{6}{section*.15}%
+\contentsline {subsection}{Model performance}{7}{section*.16}%
+\contentsline {subsection}{Important variables}{8}{section*.17}%
+\contentsline {subsection}{Model Limitations}{9}{section*.18}%
+\contentsline {subsubsection}{Black box of XGBoost}{9}{section*.19}%
+\contentsline {paragraph}{Partial dependence plots}{9}{section*.20}%
+\contentsline {paragraph}{Individual conditional expectation curves}{9}{section*.21}%
+\contentsline {paragraph}{Lime}{10}{section*.22}%
+\contentsline {section}{Conclusions}{11}{section*.23}%
+\contentsline {section}{Appendix}{11}{section*.24}%
