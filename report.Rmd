@@ -442,6 +442,15 @@ xgbGrid <- expand.grid(nrounds = c(500, 1000, 1500),
                        min_child_weight = c(0, 20)
                        )
 
+xgbGrid <- expand.grid(nrounds = c(1000),
+                       eta = c(0.05),
+                       max_depth = c(4),
+                       colsample_bytree = 0.6,
+                       subsample = 0.9,
+                       gamma = 0,
+                       min_child_weight = 2
+                       )
+
 xgb.fit <- train(price ~ ., 
                  train_df, 
                  method = "xgbTree",
@@ -471,7 +480,7 @@ xgb_var <- xgboost(data = data.matrix(subset(train_df, select = -price)),
                    min_child_weight = xgb.fit$bestTune[[6]],
                    subsample = xgb.fit$bestTune[[7]])
 
-vip(xgb_var, num_features = 10)
+# vip(xgb_var, num_features = 10)
 ```
 
 *nrounds* is the number of decision trees in the final model -- 500, 1000, 1500 were selected as options; 
@@ -492,20 +501,22 @@ set.seed(777)
 res = 
   resamples(list(LASSO = lasso.fit,
                  TREE = tree.fit,
-                 GBM = gbm.train))
+                 GBM = gbm.train,
+                 XGB= xgb.fit))
 
 cv_res = res$values
 p1 = 
   cv_res %>% 
     as.tibble() %>% 
-    select('LASSO~RMSE', 'TREE~RMSE', 'GBM~RMSE') %>% 
-    pivot_longer(c('LASSO~RMSE', 'TREE~RMSE', 'GBM~RMSE'), 
+    select('LASSO~RMSE', 'TREE~RMSE', 'GBM~RMSE', 'XGB~RMSE') %>% 
+    pivot_longer(c('LASSO~RMSE', 'TREE~RMSE', 'GBM~RMSE', 'XGB~RMSE'), 
                  names_to = 'model',
                  values_to = 'RMSE') %>% 
     mutate(
       model = ifelse(model=='LASSO~RMSE', 'LASSO', model),
       model = ifelse(model=='TREE~RMSE', 'TREE', model),
       model = ifelse(model=='GBM~RMSE', 'GBM', model),
+      model = ifelse(model=='XGB~RMSE', 'XGB', model),
       model = as.factor(model),
       model = fct_reorder(model, -RMSE, median)
     ) %>% 
@@ -593,7 +604,36 @@ y_compare_df %>%
   theme(plot.title = element_text(size = 10, face = "bold")) + 
   ggtitle(paste0('Testset RMSE of GBM:', as.character(as.integer(rmse_gbm))))
 
-(p1 + p2) / (p3 + p4)
+pred_y = predict(gbm.train, newdata = as.tibble(test_df))
+rmse_gbm = sqrt(mean((pred_y - test_df$price)^2)) 
+
+# XGB
+pred_y = predict(xgb.fit, newdata = as.tibble(test_df))
+rmse_xgb = sqrt(mean((pred_y - test_df$price)^2)) 
+y_compare_df = 
+  tibble(pred = pred_y,
+         actual = test_df$price) %>% 
+  arrange(actual) %>% 
+    pivot_longer(
+      cols = pred:actual,
+      names_to = 'type',
+      values_to = 'price'
+    ) 
+
+p5 = 
+y_compare_df %>% 
+  mutate(
+    num = seq(1, nrow(y_compare_df)),
+    type = as.factor(type)
+         ) %>% 
+  ggplot(aes(x = num, y = price), color = type) + 
+  geom_point(aes(colour = type)) + 
+  theme(plot.title = element_text(size = 10, face = "bold")) + 
+  ggtitle(paste0('Testset RMSE of XGB:', as.character(as.integer(rmse_xgb))))
+
+p1
+
+(p2 + p3) / (p4 + p5)
 
 ```
 
@@ -622,7 +662,8 @@ coef_df =
 p1 = 
   coef_df %>% 
     ggplot(aes(x=reorder(variable, abs_coef, median, na.rm = TRUE), y=coefficients, fill=positive)) +
-    geom_bar(stat="identity") + coord_flip() + theme(legend.position="none") + labs(x="variable")
+    geom_bar(stat="identity") + coord_flip() + theme(legend.position="none") + labs(x="variable") +
+    ggtitle('Variable importance of Lasso')
 
 
 
@@ -644,7 +685,8 @@ imp_tree_df =
 p2 =
   imp_tree_df %>% 
       ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
-      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 25, size=7.5)) + labs(x="variable", y = 'importance')
+      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 25, size=7.5)) + labs(x="variable", y = 'importance')+
+      ggtitle('Variable importance of Decision Tree')
 
 
 library(gbm)
@@ -667,9 +709,36 @@ p3 =
   imp_gbm_df %>% 
       ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
       geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 25, size=7.5)) + 
-  labs(x="variable", y = 'importance')
+  labs(x="variable", y = 'importance')+
+      ggtitle('Variable importance of GBM')
 
-p1 / (p2 + p3)
+# XGB
+imp_xgb = varImp(xgb.fit)
+imp_xgb_df = 
+  tibble(variable = rownames(varImp(xgb.fit)$importance),
+         coefficients = as.vector(varImp(xgb.fit)$importance)) %>% 
+  filter(coefficients!=0,
+         variable != '(Intercept)') %>% 
+  mutate(abs_coef = abs(coefficients),
+         positive = ifelse(coefficients>0, TRUE, FALSE),
+         variable = as.factor(variable)) %>% 
+  mutate(variable = variable,
+         coefficients = coefficients$Overall) %>% 
+  arrange(-abs_coef) %>% 
+  head(15) %>% 
+  select(variable, coefficients, positive)
+
+p4 = 
+  imp_xgb_df %>% 
+      ggplot(aes(x=reorder(variable, -coefficients, median, na.rm = TRUE), y=coefficients, fill=positive)) +
+      geom_bar(stat="identity") + theme(legend.position="none",axis.text.x = element_text(angle = 25, size=7.5)) + 
+  labs(x="variable", y = 'importance')+
+      ggtitle('Variable importance of XGBoost')
+
+
+(p1 + p2) / (p3 + p4)
+
+
 ```
 
 The plot shows the most important 15 variables for each model. For the Lasso model, the variable importance is the coefficients. For all three models, variable year and odometer are among the top three most important variables. From the coefficients of Lasso, the car price is negatively correlated with the odometer and positively related with manufactor year. In addition, they have some shared important variables such as if manufactored by tesla, whether the car type is SUV and whether the car is rear-Wheel drive.
@@ -678,7 +747,41 @@ The plot shows the most important 15 variables for each model. For the Lasso mod
 
 * Lasso model does not have good prediction performance in the test set and cross validation
 * Regression tree model is explainable but the predictionm performance can be improved
-* GBM model fits data well but the ensemble method is like “black boxes”, we can not clearly explain how it works
+* GBM and XGB models fit data well but the ensemble method is like “black boxes”, we can not clearly explain how it works
+
+### Black box of XGBoost
+
+```{r, include=FALSE}
+library(ISLR)
+library(caret)
+library(vip)
+library(pdp)
+library(lime)
+```
+
+The best model in cross validation and test set is XGBoost. However, XGBoost is a blackbox model. Therefore, We will use partial dependence plots, individual conditional expectation curves and the lime packages to try to give prediction explanations.
+
+
+
+#### Partial dependence plots
+
+We have identified some relevant variables in the variable importance part, the two most important ones are manufacturertelsa and year. The next step is to attempt to understand how the
+response variable changes based on these variables.
+We wull use partial dependence plots to plot the change in the average predicted value as specified feature(s) vary over their marginal distri-
+bution.
+
+```{r}
+pdp1.rf <- xgb.fit %>%
+  partial(pred.var = c("manufacturertelsa")) %>%
+  autoplot(train = train_df, rug = TRUE)
+pdp2.rf <- xgb.fit %>%
+  partial(pred.var = c("CRBI","CAtBat"), chull = TRUE) %>%
+  autoplot(train = train_df, rug = TRUE)
+grid.arrange(pdp1.rf, pdp2.rf, nrow = 1)
+
+train_df
+```
+
 
 
 # Conclusions
