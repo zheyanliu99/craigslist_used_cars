@@ -1,6 +1,7 @@
 ---
 title: "XGBoostings are high-quality electric cars price predictors"
-author: "Zheyan Liu (zl3119)"
+author: "Zheyan Liu, Zexu Yuan, Baode Gao"
+
 output:
   pdf_document:
     toc: yes
@@ -11,6 +12,9 @@ output:
     toc_depth: '2'
 editor_options: 
   chunk_output_type: console
+  
+
+
 --- 
 
 \newpage
@@ -67,7 +71,7 @@ df %>%
 ```
 
 
-As the oil price rises, more and more people begin to pay attention to electric cars. First of all, electric cars can save money. No matter where you charge in the U.S., electric cars are cheaper to fuel than gasoline-powered vehicles. Then, electric cars can reduce emissions. Today, the average U.S. electric vehicle emits as much as a gasoline vehicle that gets 73 miles per gallon. As wind and solar power replace coal-fired generation, the emissions performance of electric vehicles will improve. Moreover, electric vehicles offer a better driving experience. Electric engines produce instant torque, which means electric vehicles can narrow the starting line and provide smooth, responsive acceleration and deceleration. Electric vehicles have a lower center of gravity, which improves handling, responsiveness and ride comfort. Rising energy cost would contribute to higher prices of vehicles including second-hand cars; however, electric vehicles, an alternative to traditional motor vehicles, recently plays an increasingly important role in used car market. Basing on that, more families might prefer electric cars. This paper will work on building models to help predict the used electric car price so that customers can use this model to determine whether the deal is reasonable. 
+As the oil price rises, more and more people begin to pay attention to electric cars. First of all, electric cars can save money. No matter where you charge in the U.S., electric cars are cheaper to fuel than gasoline-powered vehicles. Then, electric cars can reduce emissions. Today, the average U.S. electric vehicle emits as much as a gasoline vehicle that gets 73 miles per gallon. As wind and solar power replace coal-fired generation, the emissions performance of electric vehicles will improve. Moreover, electric vehicles offer a better driving experience. Electric engines produce instant torque, which means electric vehicles can narrow the starting line and provide smooth, responsive acceleration and deceleration. Electric vehicles have a lower center of gravity, which improves handling, responsiveness and ride comfort. Rising energy cost would contribute to higher prices of vehicles including second-hand cars; however, electric vehicles, an alternative to traditional motor vehicles, recently plays an increasingly important role in used car market. Basing on that, more families might prefer electric cars. This paper will work on building models to help predict the used electric car price so that customers can use this model to determine whether the deal is reasonable. The report is within five pages excluding contents, plots and tables, check out the excluded version **[here](https://github.com/zheyanliu99/craigslist_used_cars/blob/main/report_noplot.pdf)**
 
 
 We used data from **[Craigslist](https://newyork.craigslist.org/)**, which is the world's largest collection of used vehicles for sale. The **[original data](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data)** contains price of used car from Apr 2021 to May 2021, it contains `r nrow(df_raw)` observations and  `r ncol(df_raw)` variables. Since we are only interested in cars fueled by electricity, data is reduced to `r nrow(df)` observations.
@@ -850,4 +854,4 @@ Some conclusions from the data preparation step, analysis step and modeling step
 # Appendix
 
 * All the data, code and documents are in the github, check out the repository **[here](https://github.com/zheyanliu99/craigslist_used_cars.git)**
-* The report is within three pages excluding plots and tables, check out the excluded version **[here](https://github.com/zheyanliu99/craigslist_used_cars/blob/main/report_noplot.pdf)**
+* The report is within five pages excluding contents, plots and tables, check out the excluded version **[here](https://github.com/zheyanliu99/craigslist_used_cars/blob/main/report_noplot.pdf)**
