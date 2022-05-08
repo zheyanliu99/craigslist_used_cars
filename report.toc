@@ -1,7 +1,7 @@
 \contentsline {section}{Introduction}{2}{section*.2}%
 \contentsline {subsection}{Research Questions}{2}{section*.3}%
 \contentsline {subsection}{Data preparation}{2}{section*.4}%
-\contentsline {section}{Exploratory data analysis}{2}{section*.5}%
+\contentsline {section}{Exploratory data analysis}{3}{section*.5}%
 \contentsline {subsection}{Interesting price distribution}{3}{section*.6}%
 \contentsline {subsection}{Price vs category variables}{4}{section*.7}%
 \contentsline {subsection}{Price map}{5}{section*.8}%
@@ -13,11 +13,11 @@
 \contentsline {subsubsection}{Gradient Boosting Regression Tree}{6}{section*.14}%
 \contentsline {subsubsection}{XGBoost}{6}{section*.15}%
 \contentsline {subsection}{Model performance}{7}{section*.16}%
-\contentsline {subsection}{Important variables}{8}{section*.17}%
+\contentsline {subsection}{Important variables}{9}{section*.17}%
 \contentsline {subsection}{Model Limitations}{9}{section*.18}%
-\contentsline {subsubsection}{Black box of XGBoost}{9}{section*.19}%
-\contentsline {paragraph}{Partial dependence plots}{9}{section*.20}%
-\contentsline {paragraph}{Individual conditional expectation curves}{9}{section*.21}%
-\contentsline {paragraph}{Lime}{10}{section*.22}%
-\contentsline {section}{Conclusions}{11}{section*.23}%
-\contentsline {section}{Appendix}{11}{section*.24}%
+\contentsline {subsubsection}{Black box of XGBoost}{10}{section*.19}%
+\contentsline {paragraph}{Partial dependence plots}{10}{section*.20}%
+\contentsline {paragraph}{Individual conditional expectation curves}{10}{section*.21}%
+\contentsline {paragraph}{Lime}{11}{section*.22}%
+\contentsline {section}{Conclusions}{12}{section*.23}%
+\contentsline {section}{Appendix}{12}{section*.24}%

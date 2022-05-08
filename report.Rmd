@@ -1,5 +1,5 @@
 ---
-title: "2021 Craigslist used electric car price prediction"
+title: "XGBoostings are high-quality electric cars price predictors"
 author: "Zheyan Liu (zl3119)"
 output:
   pdf_document:
@@ -21,7 +21,7 @@ library(tidyverse)
 library(caret)
 library(patchwork)
 library(leaflet)
-
+library(knitr)
 knitr::opts_chunk$set(
   fig.width = 6,
   fig.asp = .7,
@@ -67,7 +67,7 @@ df %>%
 ```
 
 
-With the soaring oil price, more and more people are considering buying an electric car to save money. We would like to build models to help predict the used electric car price so that customers can use this model to determine whether the deal is reasonable. 
+As the oil price rises, more and more people begin to pay attention to electric cars. First of all, electric cars can save money. No matter where you charge in the U.S., electric cars are cheaper to fuel than gasoline-powered vehicles. Then, electric cars can reduce emissions. Today, the average U.S. electric vehicle emits as much as a gasoline vehicle that gets 73 miles per gallon. As wind and solar power replace coal-fired generation, the emissions performance of electric vehicles will improve. Moreover, electric vehicles offer a better driving experience. Electric engines produce instant torque, which means electric vehicles can narrow the starting line and provide smooth, responsive acceleration and deceleration. Electric vehicles have a lower center of gravity, which improves handling, responsiveness and ride comfort. Rising energy cost would contribute to higher prices of vehicles including second-hand cars; however, electric vehicles, an alternative to traditional motor vehicles, recently plays an increasingly important role in used car market. Basing on that, more families might prefer electric cars. This paper will work on building models to help predict the used electric car price so that customers can use this model to determine whether the deal is reasonable. 
 
 
 We used data from **[Craigslist](https://newyork.craigslist.org/)**, which is the world's largest collection of used vehicles for sale. The **[original data](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data)** contains price of used car from Apr 2021 to May 2021, it contains `r nrow(df_raw)` observations and  `r ncol(df_raw)` variables. Since we are only interested in cars fueled by electricity, data is reduced to `r nrow(df)` observations.
@@ -230,7 +230,7 @@ Most car sales takes place near the Coast or the Great Lakes Region. In addition
 
 # Models
 
-I used Lasso, Regression Tree and Gradient Boosting Tree to predict the price. I used Lasso because there is a considerable number of variables (239 including dummy variables) in the training data. And L1 regularization can help reduce dimension and avoid multicollinearity. In addition, I selected Regression Tree because it is easy to interpret and it captures the interaction between variables. Finally, I adopted the ensemble model GBM to better utilize the good property of tree-based models, a single tree can have high bias while boosting methods fits the residual of last round to gradually reduce bias.
+We used Lasso, Regression Tree and Gradient Boosting Tree to predict the price. We used Lasso because there is a considerable number of variables (239 including dummy variables) in the training data. And L1 regularization can help reduce dimension and avoid multicollinearity. In addition, We selected Regression Tree because it is easy to interpret and it captures the interaction between variables. Finally, We adopted the ensemble model GBM to better utilize the good property of tree-based models, a single tree can have high bias while boosting methods fits the residual of last round to gradually reduce bias.
 
 ## Model preparation
 
@@ -506,6 +506,7 @@ res =
                  GBM = gbm.train,
                  XGB= xgb.fit))
 
+
 cv_res = res$values
 p1 = 
   cv_res %>% 
@@ -639,9 +640,18 @@ p1
 
 ```
 
-The cross validation median RMSE LASSO(6681) > TREE(6054) >> GBM(4274). The reason is that most variables do not have linear relationship with price. Additionally, Lasso model does not allow interaction between variables while Tree-based model considers that. 
+The full training performances are shown below:
 
-What is more, I plotted the scatterplot of actual and predicted value. Note that Lasso can predict the price to be negative values, which is not reasonable in practice. I use a simple function $price_{pred}=max(0,price_{pred})$ to correct that. On the test set, it is clear that these model do not fit well on extreme values (very high or very low price). Also, the prediction of regression tree looks like a step function.
+|TRAIN RESULTS | MAE (median)| RMSE (median)| RSQUARED (median)|
+|--------------|-------------|--------------|------------------|
+| LASSO        | 4251.711    | 6680.215     | 0.8031168        | 
+| TREE         | 3982.900    | 6054.306     | 0.8325880        |
+| GBM          | 2400.654    | 4390.029     | **0.9146599**    | 
+| XGB          | **2102.903**| **4219.979** | 0.9136081        | 
+
+The cross validation median RMSE LASSO(6680) > TREE(6054) >> GBM(4390) > XGB(4219.979). So, the XGB should be seleceted as final model. The reason is that most variables do not have linear relationship with price. Additionally, Lasso model does not allow interaction between variables while Tree-based model considers that. 
+
+What is more, we plotted the scatterplot of actual and predicted value. Note that Lasso can predict the price to be negative values, which is not reasonable in practice. we used a simple function $price_{pred}=max(0,price_{pred})$ to correct that. On the test set, it is clear that these model do not fit well on extreme values (very high or very low price). Also, the prediction of regression tree looks like a step function.
 
 ## Important variables
 
@@ -759,6 +769,7 @@ library(caret)
 library(vip)
 library(pdp)
 library(lime)
+
 ```
 
 The best model in cross validation and test set is XGBoost. However, XGBoost is a blackbox model. Therefore, We will use partial dependence plots, individual conditional expectation curves and the lime packages to try to give prediction explanations.
@@ -829,10 +840,11 @@ plot_features(explanation.obs)
 
 Some conclusions from the data preparation step, analysis step and modeling step:
 
-* I determined the missing pattern for missing variables and used mode imputation for categorical variables, median imputation for continuous variable
-* Some interesting facts about data are discovered such as large number of Tesla cars causing the price histogram to have two vertices. Another fact is the interesting distribution of electric car sales
-* The GBM model has the best prediction performance, it has RMSE 4274 at cross validation and RMSE `r as.integer(rmse_gbm)` at the test set while the median car price in the dataset is `r median(df1$price)`
-* If interpretability is also considered, we should select Regression Tree model because it has acceptable prediction error with RMSE 6054 at cross validation and it has good interpretability
+* We determined the missing pattern for missing variables and used mode imputation for categorical variables, median imputation for continuous variable.
+* Some interesting facts about data are discovered such as large number of Tesla cars causing the price histogram to have two vertices. Another fact is the interesting distribution of electric car sales.
+* The XGB model has been selected by the best training performance, it has RMSE 4219.979 at training set and RMSE `r as.integer(rmse_gbm)` at the test set while the median car price in the dataset is `r median(df1$price)`.
+* Interpreting black-box XGB is done by partial dependence plots, individual conditional expectation curves and local interpretable model-agnostic explainations.
+* If more rigorous interpretability is also considered, we should select Regression Tree model because it has acceptable prediction error with RMSE 6054 at cross validation and it has good interpretability.
 
 
 # Appendix
