@@ -1,5 +1,5 @@
 ---
-title: "XGBoostings are high-quality electric cars price predictors"
+title: "XGBoost-based used electric car price prediction"
 author: "Zheyan Liu, Zexu Yuan, Baode Gao"
 
 output:
@@ -638,9 +638,9 @@ y_compare_df %>%
   theme(plot.title = element_text(size = 10, face = "bold")) + 
   ggtitle(paste0('Testset RMSE of XGB:', as.character(as.integer(rmse_xgb))))
 
-p1
 
-(p2 + p3) / (p4 + p5)
+
+p1/(p2 + p3) / (p4 + p5)
 
 ```
 
@@ -782,10 +782,10 @@ The best model in cross validation and test set is XGBoost. However, XGBoost is 
 
 #### Partial dependence plots
 
-We have identified some relevant variables in the variable importance part, important ones are year and odometer. The next step is to attempt to understand how the
-response variable changes based on these variables.
-We wull use partial dependence plots to plot the change in the average predicted value as specified feature(s) vary over their marginal distri-
-bution.
+We have identified some relevant variables in the variable importance part, important ones are year and odometer. 
+We will use partial dependence plots to plot the change in the average predicted value as specified feature(s) vary over their marginal distribution.
+
+We can see from the first plot that the bigger the year the higher the predicted price. From the second plot, we can see that higher year and smaller odometer makes predicted price smaller.
 
 ```{r, message=FALSE, echo=FALSE, warning=FALSE}
 pdp1.rf <- xgb.fit %>%
@@ -801,8 +801,35 @@ grid.arrange(pdp1.rf, pdp2.rf, nrow = 1)
 #### Individual conditional expectation curves
 
 ICE curves are an extension of partial dependence plots plots but, rather than plot the average marginal effect on the response
-variable, we plot the change in the predicted response variable for each observation as we vary each predictor
-variable.
+variable, we plot the change in the predicted response variable for each observation as we vary each predictor variable. **Plot in the appendix**
+
+
+#### Lime
+
+lime() functio can also be used to explain the result of the model
+on new observations. We create
+a compact visual representation of the explanations for each case (6 in total) and label combination in an explanation.
+Each extracted feature is shown with its weight, thus giving the importance of the feature in the label prediction. **Plot in the appendix**
+
+
+
+# Conclusions
+
+Some conclusions from the data preparation step, analysis step and modeling step:
+
+* We determined the missing pattern for missing variables and used mode imputation for categorical variables, median imputation for continuous variable.
+* Some interesting facts about data are discovered such as large number of Tesla cars causing the price histogram to have two vertices. Another fact is the interesting distribution of electric car sales.
+* The XGB model has been selected by the best training performance, it has RMSE 4219.979 at training set and RMSE `r as.integer(rmse_gbm)` at the test set while the median car price in the dataset is `r median(df1$price)`.
+* Interpreting black-box XGB is done by partial dependence plots, individual conditional expectation curves and local interpretable model-agnostic explainations.
+* If more rigorous interpretability is also considered, we should select Regression Tree model because it has acceptable prediction error with RMSE 6054 at cross validation and it has good interpretability.
+
+
+# Appendix
+
+* All the data, code and documents are in the github, check out the repository **[here](https://github.com/zheyanliu99/craigslist_used_cars.git)**
+* The report is within five pages excluding contents, plots and tables, check out the excluded version **[here](https://github.com/zheyanliu99/craigslist_used_cars/blob/main/report_noplot.pdf)**
+
+**ICE curves**
 
 ```{r, message=FALSE, echo=FALSE, warning=FALSE}
 ice1.rf <- xgb.fit %>%
@@ -821,16 +848,9 @@ ice2.rf <- xgb.fit %>%
 grid.arrange(ice1.rf, ice2.rf, nrow = 1)
 ```
 
-#### Lime
+**Lime**
 
-Once an explainer has been created using the lime() function, it can be used to explain the result of the model
-on new observations. The explain() function takes new observation along with the explainer and returns a
-data.frame with prediction explanations, one observation per row. The function plot_features() creates
-a compact visual representation of the explanations for each case and label combination in an explanation.
-Each extracted feature is shown with its weight, thus giving the importance of the feature in the label
-prediction.
-
-```{r, message=FALSE, echo=FALSE, warning=FALSE}
+```{r, message=FALSE, echo=FALSE, warning=FALSE,fig.height = 10, fig.width = 8, fig.asp=1}
 explainer.rf <- lime(train_df %>% select(-price), xgb.fit)
 new_obs <- (test_df %>% select(-price))[1:6,]
 explanation.obs <- explain(new_obs,
@@ -838,20 +858,3 @@ explanation.obs <- explain(new_obs,
                            n_features = 10)
 plot_features(explanation.obs)
 ```
-
-
-# Conclusions
-
-Some conclusions from the data preparation step, analysis step and modeling step:
-
-* We determined the missing pattern for missing variables and used mode imputation for categorical variables, median imputation for continuous variable.
-* Some interesting facts about data are discovered such as large number of Tesla cars causing the price histogram to have two vertices. Another fact is the interesting distribution of electric car sales.
-* The XGB model has been selected by the best training performance, it has RMSE 4219.979 at training set and RMSE `r as.integer(rmse_gbm)` at the test set while the median car price in the dataset is `r median(df1$price)`.
-* Interpreting black-box XGB is done by partial dependence plots, individual conditional expectation curves and local interpretable model-agnostic explainations.
-* If more rigorous interpretability is also considered, we should select Regression Tree model because it has acceptable prediction error with RMSE 6054 at cross validation and it has good interpretability.
-
-
-# Appendix
-
-* All the data, code and documents are in the github, check out the repository **[here](https://github.com/zheyanliu99/craigslist_used_cars.git)**
-* The report is within five pages excluding contents, plots and tables, check out the excluded version **[here](https://github.com/zheyanliu99/craigslist_used_cars/blob/main/report_noplot.pdf)**
